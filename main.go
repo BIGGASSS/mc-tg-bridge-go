@@ -103,12 +103,13 @@ func main() {
 		log.Fatal("MC_LOG_PATH not set")
 	}
 	if backend == "" {
-		backend = "https://api.telegram.org/bot%s"
+		backend = "https://api.telegram.org"
 	} else {
 		log.Printf("Custom backend: %s", backend)
 	}
 
-	bot, err := tgbotapi.NewBotAPIWithAPIEndpoint(token, backend)
+	endpoint := backend + "/bot%s/%s"
+	bot, err := tgbotapi.NewBotAPIWithAPIEndpoint(token, endpoint)
 	if err != nil {
 		log.Panic(err)
 	}
