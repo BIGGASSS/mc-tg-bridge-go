@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"io"
 	"regexp"
 	"strings"
 	"syscall"
@@ -48,6 +49,7 @@ func readConsole(ctx context.Context, path string, out chan<- string) error {
 		Follow:   true,
 		ReOpen:   true,                        // handle rotation
 		MustExist: true,                       // fail fast if missing
+		Location: &tail.SeekInfo{Offset: 0, Whence: io.SeekEnd}, // like -n0
 		Logger:   tail.DiscardingLogger,       // quiet internal logs
 	})
 	if err != nil {
