@@ -94,6 +94,7 @@ func main() {
 	// Replace with a fresh token from BotFather or read from env.
 	token := os.Getenv("TELEGRAM_BOT_TOKEN")
 	path := os.Getenv("MC_LOG_PATH")
+	backend := os.Getenv("TG_API_BACKEND")
 	if token == "" && path == ""{
 		log.Fatal("TELEGRAM_BOT_TOKEN and MC_LOG_PATH not set")
 	} else if token == "" {
@@ -101,8 +102,13 @@ func main() {
 	} else if path == "" {
 		log.Fatal("MC_LOG_PATH not set")
 	}
+	if backend == "" {
+		backend = "https://api.telegram.org/bot%s"
+	} else {
+		log.Printf("Custom backend: %s", backend)
+	}
 
-	bot, err := tgbotapi.NewBotAPI(token)
+	bot, err := tgbotapi.NewBotAPIWithAPIEndpoint(token, backend)
 	if err != nil {
 		log.Panic(err)
 	}
