@@ -167,6 +167,10 @@ func main() {
 				if isCmd(update.Message.Text) {
 					log.Printf("[MATCHED] @%s: %s", update.Message.From.UserName, update.Message.Text)
 					cmd := strings.TrimPrefix(update.Message.Text, "!")
+					if cmd == "help" {
+						log.Printf("[BLOCKED] @%s: %s", update.Message.From.UserName, update.Message.Text)
+						continue
+					}
 					if err := screenStuff("mc", cmd); err != nil {
 						log.Printf("screenStuff error: %v", err)
 						_, _ = bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Error: "+err.Error()))
