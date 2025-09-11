@@ -28,11 +28,11 @@ It tails your Minecraft server log and forwards new lines to Telegram, and lets 
 ## Installation
 
 ```bash
-git clone https://github.com/yourname/mc-tg-bridge-go.git
-cd mc-tg-bridge-go
+git clone https://github.com/BIGGASSS/Hyperion.git
+cd Hyperion
 
 # Build
-go build -o mc-tg-bridge .
+go build -o hyperion .
 ````
 
 ---
@@ -70,7 +70,7 @@ export START_SCRIPT=/home/mc/start.sh
 
 ### systemd (optional)
 
-Create `/etc/systemd/system/mc-tg-bridge.service`:
+Create `/etc/systemd/system/hyperion.service`:
 
 ```ini
 [Unit]
@@ -79,7 +79,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/home/mc/mc-tg-bridge
+ExecStart=/home/mc/hyperion
 WorkingDirectory=/home/mc
 Environment=TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
 Environment=MC_LOG_PATH=/home/mc/server/logs/latest.log
@@ -96,8 +96,8 @@ Enable & start:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable mc-tg-bridge
-sudo systemctl start mc-tg-bridge
+sudo systemctl enable hyperion
+sudo systemctl start hyperion
 ```
 
 ---
