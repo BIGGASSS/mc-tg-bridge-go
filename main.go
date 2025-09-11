@@ -12,13 +12,11 @@ import (
 	"syscall"
 	"time"
 	"os/exec"
-	"slices"
+	"strconv"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/hpcloud/tail"
 )
-
-var AdminList = []int64{1971451950}
 
 func isCmd(s string) bool { // determines if the message starts with `!`
 	re := regexp.MustCompile("^!")
@@ -93,22 +91,35 @@ func runConsoleGoroutine(parent context.Context, path string) (cancel func(), li
 }
 
 func main() {
-	// Replace with a fresh token from BotFather or read from env.
 	token := os.Getenv("TELEGRAM_BOT_TOKEN")
 	path := os.Getenv("MC_LOG_PATH")
 	backend := os.Getenv("TG_API_BACKEND")
-	if token == "" && path == ""{
-		log.Fatal("TELEGRAM_BOT_TOKEN and MC_LOG_PATH not set")
-	} else if token == "" {
-		log.Fatal("TELEGRAM_BOT_TOKEN not set")
-	} else if path == "" {
-		log.Fatal("MC_LOG_PATH not set")
+	admin := os.Getenv("ADMIN_CHAT_ID")
+	startScript := os.Getenv("START_SCRIPT")
+	must := map[string]string {
+    "TELEGRAM_BOT_TOKEN": token,
+    "MC_LOG_PATH":        path,
+    "ADMIN_CHAT_ID":      admin,
+    "START_SCRIPT":       startScript,
 	}
+	var missing []string
+	for k, v := range must { if v == "" { missing = append(missing, k) } }
+	if len(missing) > 0 {
+	    log.Fatalf("Missing required env: %s", strings.Join(missing, ", "))
+	}
+
 	if backend == "" {
+		log.Printf("Using official API backend")
 		backend = "https://api.telegram.org"
 	} else {
 		log.Printf("Custom backend: %s", backend)
 	}
+
+	adminID, err := strconv.ParseInt(admin, 10, 64)
+	if err != nil {
+	    log.Panic("ADMIN_CHAT_ID not valid")
+	}
+
 
 	endpoint := backend + "/bot%s/%s"
 	bot, err := tgbotapi.NewBotAPIWithAPIEndpoint(token, endpoint)
@@ -131,13 +142,11 @@ func main() {
 	u.Timeout = 60
 	updates := bot.GetUpdatesChan(u)
 
-	// Fan-out helper to send a line to all admins (or filter as needed)
-	sendToAdmins := func(text string) {
-		for _, chatID := range AdminList {
-			msg := tgbotapi.NewMessage(chatID, text)
-			if _, err := bot.Send(msg); err != nil {
-				log.Printf("send error to %d: %v", chatID, err)
-			}
+	// Fan-out helper to send a line to admins (or filter as needed)
+	sendToAdmin := func(text string) {
+		msg := tgbotapi.NewMessage(adminID, text)
+		if _, err := bot.Send(msg); err != nil {
+			log.Printf("send error to %s: %v", admin, err)
 		}
 	}
 
@@ -153,9 +162,7 @@ func main() {
 				log.Println("tail ended")
 				return
 			}
-			// Decide what to forward. Example: forward every line.
-			// You can add filters here (e.g., only important events).
-			sendToAdmins(ln)
+			sendToAdmin(ln)
 
 		case update := <-updates:
 			// updates channel may close; guard nils
@@ -163,14 +170,28 @@ func main() {
 				continue
 			}
 
-			if update.Message != nil && slices.Contains(AdminList, update.Message.Chat.ID) {
+			if update.Message != nil && adminID == update.Message.Chat.ID {
 				if isCmd(update.Message.Text) {
-					log.Printf("[MATCHED] @%s: %s", update.Message.From.UserName, update.Message.Text)
 					cmd := strings.TrimPrefix(update.Message.Text, "!")
 					if cmd == "help" {
 						log.Printf("[BLOCKED] @%s: %s", update.Message.From.UserName, update.Message.Text)
 						continue
+					} else if cmd == "restart" {
+						log.Printf("[MATCHED] @%s: %s", update.Message.From.UserName, update.Message.Text)
+						if err := screenStuff("mc", "stop"); err !=nil {
+							log.Printf("screenStuff error: %v", err)
+							_, _ = bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Error: "+err.Error()))
+						}
+						log.Printf("Restarting in 20 seconds")
+						_, _ = bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Restarting in 20 seconds"))
+						time.Sleep(20 * time.Second)
+						if err := screenStuff("mc", "bash " + startScript); err !=nil {
+							log.Printf("screenStuff error: %v", err)
+							_, _ = bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Error: "+err.Error()))
+						}
+						continue
 					}
+					log.Printf("[MATCHED] @%s: %s", update.Message.From.UserName, update.Message.Text)
 					if err := screenStuff("mc", cmd); err != nil {
 						log.Printf("screenStuff error: %v", err)
 						_, _ = bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Error: "+err.Error()))
@@ -178,7 +199,7 @@ func main() {
 				} else {
 					log.Printf("[NOT MATCHED] @%s: %s", update.Message.From.UserName, update.Message.Text)
 				}
-			} else if update.Message != nil && !slices.Contains(AdminList, update.Message.Chat.ID) {
+			} else if update.Message != nil && adminID != update.Message.Chat.ID {
 				log.Printf("[UNAUTHORIZED] @%s: %s", update.Message.From.UserName, update.Message.Text)
 			}
 		}
