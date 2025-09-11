@@ -1,4 +1,4 @@
-# MC-TG-BRIDGE-GO
+# Hyperion
 
 A lightweight Telegram ↔ Minecraft console bridge written in Go.
 It tails your Minecraft server log and forwards new lines to Telegram, and lets an **admin** run server commands via Telegram messages.
