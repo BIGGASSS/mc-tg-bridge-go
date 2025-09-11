@@ -1,4 +1,4 @@
-module example.com/go-tg-bot
+module example.com/hyperion
 
 go 1.25.1
 
