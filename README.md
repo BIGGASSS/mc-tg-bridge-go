@@ -31,10 +31,6 @@ It tails your Minecraft server log and forwards new lines to Telegram, and lets 
 git clone https://github.com/yourname/mc-tg-bridge-go.git
 cd mc-tg-bridge-go
 
-# If this repo has no go.mod yet:
-go mod init github.com/yourname/mc-tg-bridge-go
-go mod tidy
-
 # Build
 go build -o mc-tg-bridge .
 ````
