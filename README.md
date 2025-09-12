@@ -65,7 +65,7 @@ export ADMIN_CHAT_ID=123456789
 export START_SCRIPT=/home/mc/start.sh
 # export TG_API_BACKEND=https://api.telegram.org  # optional
 
-./mc-tg-bridge
+./hyperion
 ```
 
 ### systemd (optional)
